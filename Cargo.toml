@@ -1,0 +1,28 @@
+[package]
+authors = ["Error4767 <2303184060@qq.com>"]
+edition = "2018"
+name = "web_server"
+version = "0.1.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[[bin]]
+name = "web_server"
+path = "src/transfer_serve_main.rs"
+
+[dependencies]
+actix-cors = "0.5.4"
+actix-files = "0.5.0"
+actix-web = {version = "3.3.2", features = ["openssl"]}
+async-std = {version = "1.9.0", features = ["attributes"]}
+futures = "0.3.13"
+openssl = "0.10"
+rand = "0.8.3"
+serde = "1.0.125"
+serde_json = "1.0.64"
+parking_lot = "0.11.1"
+actix_split_chunks_upload_handlers = {path = "./actix_split_chunks_upload_handlers"}
+actix_utils = { path = "./actix_utils" }
+md5 = "0.7.0"
+urlencoding = "2.1.0"
+hotwatch = "0.4.5"
