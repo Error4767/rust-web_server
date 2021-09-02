@@ -27,16 +27,20 @@ async fn cloud_clipboard_add(
         Ok(text_content) => text_content,
         Err(_) => {
           // 文本格式不对，不符合url编码
-          return Err(error::ErrorBadRequest("failed to parse text_content"));
+          return Err(error::ErrorBadRequest("failed to parse request header textContent"));
         }
       });
       let file_path = format!("./clipboard/{}.txt", uid);
-      fs::File::create(&file_path).await?;
-      fs::write(&file_path, &text_content).await?;
+      if let Err(_) = fs::File::create(&file_path).await {
+        return Err(error::ErrorBadRequest("failed to create file"));
+      };
+      if let Err(_) = fs::write(&file_path, &text_content).await {
+        return Err(error::ErrorBadRequest("failed to write file"));
+      };
       Ok(HttpResponse::Ok().body(""))
     },
     None=> {
-      Err(error::ErrorBadRequest("request header is not found or invalid"))
+      return Err(error::ErrorBadRequest("request header textContent is not found"));
     }
   }
 }
@@ -46,7 +50,10 @@ async fn cloud_clipboard_get(
   web::Path(uid): web::Path<String>
 ) -> Result<String, Error> {
   let file_path = format!("./clipboard/{}.txt", uid);
-  Ok(fs::read_to_string(file_path).await?)
+  match fs::read_to_string(file_path).await {
+    Ok(result_content)=> Ok(result_content),
+    Err(_)=> Err(error::ErrorBadRequest("this clipboard file is not found"))
+  }
 }
 
 #[get("/sdsd")]
