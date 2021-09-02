@@ -23,7 +23,13 @@ async fn cloud_clipboard_add(
 ) -> Result<HttpResponse, Error> {
   match get_header(&req, "textContent") {
     Some(raw_text_content)=> {
-      let text_content = String::from(decode(raw_text_content).unwrap());
+      let text_content = String::from(match decode(raw_text_content) {
+        Ok(text_content) => text_content,
+        Err(_) => {
+          // 文本格式不对，不符合url编码
+          return Err(error::ErrorBadRequest("failed to parse text_content"));
+        }
+      });
       let file_path = format!("./clipboard/{}.txt", uid);
       fs::File::create(&file_path).await?;
       fs::write(&file_path, &text_content).await?;
