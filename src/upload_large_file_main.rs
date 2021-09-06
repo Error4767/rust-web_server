@@ -1,45 +1,49 @@
 use actix_cors::Cors;
-use actix_web::{web, App, HttpServer};
+use actix_web::{App, HttpServer};
 use openssl::ssl::{SslAcceptor, SslFiletype, SslMethod};
 
 mod upload_large_file;
-use upload_large_file::{actix_configure, create_mut_global_state};
+use upload_large_file::{actix_configure, update_tokens};
 
 use hotwatch::{Event, Hotwatch};
-use std::fs as fsSync;
+use std::{fs as fsSync};
+
+pub fn watch_file() {
+  
+}
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-  // global state
-  let (verify, uploaded_chunks_datas) = create_mut_global_state();
-
-  let verify = web::Data::new(verify);
-  let uploaded_chunks_datas = web::Data::new(uploaded_chunks_datas);
-
-  // 观察文件变化，更新tokens
-  let write_verify = verify.clone();
+  
+  // 观察文件变化，更新 tokens
   let mut hot_watch = match Hotwatch::new() {
     Ok(hot_watch) => hot_watch,
     Err(_) => panic!("failed to launch file watcher"),
   };
   let watch_path = "./validTokens.json";
-  if let Err(_) = hot_watch.watch(watch_path, move |event: Event| {
+  if let Err(err) = hot_watch.watch(watch_path, move |event: Event| {
     if let Event::Write(watch_path) = event {
-      if let Ok(content) = fsSync::read_to_string(watch_path) {
-        let new_tokens:Vec<String> = match serde_json::from_str(&content) {
-          Ok(content)=> content,
-          Err(_)=> {
-            println!("read watched file failed");
-            return;
-          } 
-        };
-        let mut tokens = write_verify.tokens.write();
-        *tokens = new_tokens;
-        println!("tokens refreshed");
+      match fsSync::read_to_string(watch_path) {
+        Ok(content)=> {
+          let new_tokens:Vec<String> = match serde_json::from_str(&content) {
+            Ok(content)=> content,
+            Err(_)=> {
+              println!("read watched file failed");
+              return;
+            } 
+          };
+          // 更新 tokens
+          update_tokens(new_tokens);
+          println!("tokens refreshed");
+        },
+        Err(err)=> {
+          println!("{}", err);
+        }
       }
-      // let tokens = verify.tokens.write().await;
+      
     }
   }) {
+    println!("{}", err);
     panic!("failed watch file change");
   }
 
@@ -57,8 +61,6 @@ async fn main() -> std::io::Result<()> {
           .allow_any_header()
           .max_age(3600),
       )
-      .app_data(verify.clone())
-      .app_data(uploaded_chunks_datas.clone())
       .configure(actix_configure)
   })
   .bind_openssl("0.0.0.0:16385", builder)?

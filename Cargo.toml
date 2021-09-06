@@ -7,8 +7,10 @@ version = "0.1.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [[bin]]
-name = "web_server"
-path = "src/transfer_serve_main.rs"
+# name = "web_server"
+# path = "src/transfer_serve_main.rs"
+name = "split_chunks_upload"
+path = "src/upload_large_file_main.rs"
 
 [dependencies]
 actix-cors = "0.5.4"
@@ -26,3 +28,4 @@ actix_utils = { path = "./actix_utils" }
 md5 = "0.7.0"
 urlencoding = "2.1.0"
 hotwatch = "0.4.5"
+lazy_static="1.4.0"

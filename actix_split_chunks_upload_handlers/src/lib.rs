@@ -3,6 +3,7 @@ use async_std::{
   sync::Mutex,
   task,
 };
+use std::sync::Arc;
 use futures::{AsyncWriteExt, StreamExt};
 use std::{collections::HashMap, path::Path, time::Duration};
 
@@ -15,6 +16,10 @@ use urlencoding::decode;
 use md5::compute as computeHash;
 
 use actix_utils::{get_header, get_headers};
+
+use lazy_static::lazy_static;
+
+const BASE_PATH: &'static str = "./files/";
 
 // 512MB 最大尺寸
 const MAX_SIZE: usize = 536870912;
@@ -35,9 +40,18 @@ pub struct UploadedChunksDatas {
   pub files: Mutex<Files>,
 }
 
+lazy_static! {
+  static ref UPLOAD_CHUNKS_CONFIG: Arc<UploadChunksConfig> = Arc::new(UploadChunksConfig {
+    base_path: String::from(BASE_PATH),
+    chunks_path: String::from("./chunks/"),
+  });
+  static ref UPLOADED_CHUNKS_DATAS: Arc<UploadedChunksDatas> = Arc::new(UploadedChunksDatas {
+    files: Mutex::new(HashMap::new()),
+  });
+}
+
 pub async fn get_uploaded_chunks_hashes(
   req: HttpRequest,
-  uploaded_chunks_datas: web::Data<UploadedChunksDatas>,
 ) -> Result<String, Error> {
   let identify = match get_header(&req, "identify") {
     Some(identify) => identify,
@@ -48,7 +62,7 @@ pub async fn get_uploaded_chunks_hashes(
     }
   };
 
-  let files = uploaded_chunks_datas.files.lock().await;
+  let files = UPLOADED_CHUNKS_DATAS.files.lock().await;
 
   let chunks_hash_json_array = match files.get(identify) {
     Some(chunks_info) => match serde_json::to_string(&chunks_info) {
@@ -64,8 +78,6 @@ pub async fn get_uploaded_chunks_hashes(
 pub async fn split_chunks_upload_handler(
   req: HttpRequest,
   mut payload: web::Payload,
-  upload_chunks_config: web::Data<UploadChunksConfig>,
-  uploaded_chunks_datas: web::Data<UploadedChunksDatas>,
 ) -> Result<HttpResponse, Error> {
   // parse header
   let headers = match get_headers(
@@ -128,7 +140,7 @@ pub async fn split_chunks_upload_handler(
     return Ok(HttpResponse::Ok().body("false"));
   }
 
-  let chunk_full_path = format!("{}{}.chunk", upload_chunks_config.chunks_path, chunk_hash); // 完整的文件存放路径
+  let chunk_full_path = format!("{}{}.chunk", UPLOAD_CHUNKS_CONFIG.chunks_path, chunk_hash); // 完整的文件存放路径
 
   // 存储chunk到本地
   match fs::write(&chunk_full_path, &chunk_content).await {
@@ -137,7 +149,7 @@ pub async fn split_chunks_upload_handler(
   };
 
   // 存储chunk标识
-  let mut files = uploaded_chunks_datas.files.lock().await;
+  let mut files = UPLOADED_CHUNKS_DATAS.files.lock().await;
 
   match files.get_mut(identify) {
     Some(chunks_hash) => {
@@ -150,7 +162,7 @@ pub async fn split_chunks_upload_handler(
       chunks_hash[chunk_index] = String::from(chunk_hash);
 
       // 定时清理
-      let uploaded_datas_ref = uploaded_chunks_datas.clone();
+      let uploaded_datas_ref = UPLOADED_CHUNKS_DATAS.clone();
 
       // 拷贝一份identidy因为其引用自req
       let identify_clone = String::from(identify);
@@ -164,7 +176,7 @@ pub async fn split_chunks_upload_handler(
           for current_chunk_hash in chunks_hash.iter() {
             let chunk_path = format!(
               "{}{}.chunk",
-              upload_chunks_config.chunks_path, &current_chunk_hash
+              UPLOAD_CHUNKS_CONFIG.chunks_path, &current_chunk_hash
             );
 
             if let Ok(_) = fs::remove_file(&chunk_path).await {
@@ -188,8 +200,6 @@ pub async fn split_chunks_upload_handler(
 
 pub async fn file_chunks_merge_handler(
   req: HttpRequest,
-  upload_chunks_config: web::Data<UploadChunksConfig>,
-  uploaded_chunks_datas: web::Data<UploadedChunksDatas>,
 ) -> Result<String, Error> {
   let headers = match get_headers(
     &req,
@@ -211,17 +221,17 @@ pub async fn file_chunks_merge_handler(
 
   // 创建目录
   if let Some(index) = full_path.rfind("/") {
-    let directory = Path::new(&upload_chunks_config.base_path).join(&full_path[0..index]);
+    let directory = Path::new(&UPLOAD_CHUNKS_CONFIG.base_path).join(&full_path[0..index]);
     if let Err(_) = fs::create_dir_all(directory).await {
       return Err(error::ErrorBadRequest("create directory error"));
     }
   };
 
-  let mut files = uploaded_chunks_datas.files.lock().await;
+  let mut files = UPLOADED_CHUNKS_DATAS.files.lock().await;
 
   // 合并chunks
   println!("merge chunks");
-  let file_path = format!("{}{}", upload_chunks_config.base_path, full_path);
+  let file_path = format!("{}{}", UPLOAD_CHUNKS_CONFIG.base_path, full_path);
 
   // 创建文件
   match File::create(&file_path).await {
@@ -241,7 +251,7 @@ pub async fn file_chunks_merge_handler(
       for current_chunk_hash in chunks_hash.iter() {
         let chunk_path = format!(
           "{}{}.chunk",
-          upload_chunks_config.chunks_path, &current_chunk_hash
+          UPLOAD_CHUNKS_CONFIG.chunks_path, &current_chunk_hash
         );
         let chunk = match fs::read(&chunk_path).await {
           Ok(chunk) => chunk,
@@ -260,7 +270,7 @@ pub async fn file_chunks_merge_handler(
       for current_chunk_hash in chunks_hash.iter() {
         let chunk_path = format!(
           "{}{}.chunk",
-          upload_chunks_config.chunks_path, &current_chunk_hash
+          UPLOAD_CHUNKS_CONFIG.chunks_path, &current_chunk_hash
         );
         match fs::remove_file(&chunk_path).await {
           Ok(_) => println!("deleted chunk: {}.chunk", current_chunk_hash),
