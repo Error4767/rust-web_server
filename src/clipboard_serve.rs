@@ -56,14 +56,8 @@ async fn cloud_clipboard_get(
   }
 }
 
-#[get("/sdsd")]
-async fn asd() -> HttpResponse {
-  HttpResponse::Ok().body("Response")
-}
-
 pub fn actix_configure(config: &mut web::ServiceConfig) {
   config
-  .service(asd)
     .service(cloud_clipboard_add)
     .service(cloud_clipboard_get);
 }
