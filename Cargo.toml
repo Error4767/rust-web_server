@@ -7,17 +7,16 @@ version = "0.1.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [[bin]]
-# name = "web_server"
-# path = "src/transfer_serve_main.rs"
-name = "split_chunks_upload"
-path = "src/upload_large_file_main.rs"
+name = "web_server"
+path = "src/transfer_serve_main.rs"
+# name = "split_chunks_upload"
+# path = "src/upload_large_file_main.rs"
 
 [dependencies]
 actix-cors = "0.5.4"
 actix-files = "0.5.0"
-actix-web = { version = "3.3.2", features = ["rustls"] }
+actix-web = { version = "3.3.3" }
 async-std = { version = "1.9.0", features = ["attributes"] }
-rustls = "0.18"
 futures = "0.3.13"
 rand = "0.8.3"
 serde = "1.0.125"

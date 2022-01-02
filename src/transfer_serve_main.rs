@@ -1,31 +1,17 @@
-use std::{
-  fs::File,
-  io::BufReader,
-};
-
 use actix_cors::Cors;
-use actix_web::{App, HttpServer};
-use rustls::{NoClientAuth, ServerConfig};
-use rustls::internal::pemfile::{certs, pkcs8_private_keys};
+use actix_web::{App, HttpServer, get};
 
 mod transfer_serve;
 mod clipboard_serve;
 
+#[get("/")]
+async fn g() -> &'static str {
+  "hello world"
+}
+
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-  // Create configuration
-  let mut config = ServerConfig::new(NoClientAuth::new());
-
-  // Load key files
-  let cert_file = &mut BufReader::new(
-      File::open("server.crt").unwrap());
-  let key_file = &mut BufReader::new(
-      File::open("server.key").unwrap());
-
-  // Parse the certificate and set it in the configuration
-  let cert_chain = certs(cert_file).unwrap();
-  let mut keys = pkcs8_private_keys(key_file).unwrap();
-  config.set_single_cert(cert_chain, keys.remove(0)).unwrap();
+  
   HttpServer::new(move || {
     App::new()
       .wrap(
@@ -37,8 +23,9 @@ async fn main() -> std::io::Result<()> {
       )
       .configure(transfer_serve::actix_configure)
       .configure(clipboard_serve::actix_configure)
+      .service(g)
   })
-  .bind_rustls("0.0.0.0:16384", config)?
+  .bind("0.0.0.0:16383")?
   .run()
   .await
 }

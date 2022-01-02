@@ -1,20 +1,12 @@
 use actix_cors::Cors;
 use actix_web::{App, HttpServer};
-use rustls::{NoClientAuth, ServerConfig};
-use rustls::internal::pemfile::{certs, pkcs8_private_keys};
 
 mod upload_large_file;
 use upload_large_file::{actix_configure, update_tokens};
 
 use hotwatch::{Event, Hotwatch};
 
-use std::{
-  fs::{
-    self as fsSync,
-    File
-  },
-  io::BufReader,
-};
+use std::fs as fsSync;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -51,19 +43,6 @@ async fn main() -> std::io::Result<()> {
     panic!("failed watch file change");
   }
 
-  // Create configuration
-  let mut config = ServerConfig::new(NoClientAuth::new());
-
-  // Load key files
-  let cert_file = &mut BufReader::new(
-      File::open("server.crt").unwrap());
-  let key_file = &mut BufReader::new(
-      File::open("server.key").unwrap());
-
-  // Parse the certificate and set it in the configuration
-  let cert_chain = certs(cert_file).unwrap();
-  let mut keys = pkcs8_private_keys(key_file).unwrap();
-  config.set_single_cert(cert_chain, keys.remove(0)).unwrap();
   HttpServer::new(move || {
     App::new()
       .wrap(
@@ -75,7 +54,7 @@ async fn main() -> std::io::Result<()> {
       )
       .configure(actix_configure)
   })
-  .bind_rustls("0.0.0.0:16385", config)?
+  .bind("0.0.0.0:16382")?
   .run()
   .await
 }
