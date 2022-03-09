@@ -36,18 +36,20 @@ fn verify_token_valid(token: String) -> bool {
 async fn upload_chunks(
   req: HttpRequest,
   payload: web::Payload,
-) -> Result<HttpResponse, Error> {
-  let token = match get_header(&req, "token") {
-    Some(token) => token,
-    None => {
-      return Err(error::ErrorBadRequest("request header token is not found"));
+) -> Result<String, Error> {
+  async fn handler(req: HttpRequest, payload: web::Payload) -> Result<String, Box<dyn std::error::Error>> {
+    let token = get_header(&req, "token").ok_or_else(|| String::from("request header token is not found"))?;
+  
+    if verify_token_valid(String::from(token)) {
+      split_chunks_upload_handler(req, payload).await
+    } else {
+      Err("token is invalid".into())
     }
-  };
+  }
 
-  if verify_token_valid(String::from(token)) {
-    split_chunks_upload_handler(req, payload).await
-  } else {
-    Err(error::ErrorBadRequest("token is invalid"))
+  match handler(req, payload).await {
+    Ok(res)=> Ok(res),
+    Err(err)=> Err(error::ErrorBadRequest(err))
   }
 }
 
@@ -55,16 +57,18 @@ async fn upload_chunks(
 async fn fetch_uploaded_chunks_hashes(
   req: HttpRequest,
 ) -> Result<String, Error> {
-  let token = match get_header(&req, "token") {
-    Some(token) => token,
-    None => {
-      return Err(error::ErrorBadRequest("request header token is not found"));
+  async fn handler(req: HttpRequest) -> Result<String, Box<dyn std::error::Error>> {
+    let token = get_header(&req, "token").ok_or_else(|| String::from("request header token is not found"))?;
+    if verify_token_valid(String::from(token)) {
+      get_uploaded_chunks_hashes(req).await
+    } else {
+      Err("token is invalid".into())
     }
-  };
-  if verify_token_valid(String::from(token)) {
-    get_uploaded_chunks_hashes(req).await
-  } else {
-    Err(error::ErrorBadRequest("token is invalid"))
+  }
+
+  match handler(req).await {
+    Ok(res)=> Ok(res),
+    Err(err)=> Err(error::ErrorBadRequest(err))
   }
 }
 
