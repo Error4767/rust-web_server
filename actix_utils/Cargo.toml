@@ -2,9 +2,9 @@
 name = "actix_utils"
 version = "0.1.0"
 authors = ["Error4767 <2303184060@qq.com>"]
-edition = "2018"
+edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-actix-web = { version = "3.3.2" }
+actix-web = { version = "4.1.0" }

@@ -1,6 +1,6 @@
 [package]
 authors = ["Error4767 <2303184060@qq.com>"]
-edition = "2018"
+edition = "2021"
 name = "web_server"
 version = "0.1.0"
 
@@ -13,18 +13,19 @@ path = "src/transfer_serve_main.rs"
 # path = "src/upload_large_file_main.rs"
 
 [dependencies]
-actix-cors = "0.5.4"
-actix-files = "0.5.0"
-actix-web = { version = "3.3.3" }
-async-std = { version = "1.9.0", features = ["attributes"] }
-futures = "0.3.13"
-rand = "0.8.3"
-serde = "1.0.125"
-serde_json = "1.0.64"
-parking_lot = "0.11.1"
+actix-cors = "0.6.2"
+actix-files = "0.6.2"
+actix-web = { version = "4.1.0" }
+actix-web-lab = "0.17.0"
+async-std = { version = "1.12.0", features = ["attributes"] }
+futures = "0.3.24"
+rand = "0.8.5"
+serde = "1.0.144"
+serde_json = "1.0.85"
+parking_lot = "0.12.1"
 actix_split_chunks_upload_handlers = { path = "./actix_split_chunks_upload_handlers" }
 actix_utils = { path = "./actix_utils" }
 md5 = "0.7.0"
 urlencoding = "2.1.0"
-hotwatch = "0.4.5"
+hotwatch = "0.4.6"
 lazy_static="1.4.0"

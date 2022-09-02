@@ -6,6 +6,7 @@ use actix_web::{
   web,
   HttpResponse,
 };
+use actix_web_lab::extract;
 
 use futures::StreamExt;
 
@@ -13,7 +14,7 @@ use async_std::fs;
 
 #[post("/cloud_clipboard/add/{uid}")]
 async fn cloud_clipboard_add(
-  web::Path(uid): web::Path<String>,
+  extract::Path(uid): extract::Path<String>,
   mut payload: web::Payload,
 ) -> Result<HttpResponse, Error> {
   // 取得请求体
@@ -35,7 +36,7 @@ async fn cloud_clipboard_add(
 
 #[get("/cloud_clipboard/get/{uid}")]
 async fn cloud_clipboard_get(
-  web::Path(uid): web::Path<String>
+  extract::Path(uid): extract::Path<String>
 ) -> Result<String, Error> {
   let file_path = format!("./clipboard/{}.txt", uid);
   match fs::read_to_string(file_path).await {

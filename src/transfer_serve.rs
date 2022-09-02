@@ -1,5 +1,6 @@
 use actix_files::NamedFile;
 use actix_web::{error, get, post, web, Error, HttpRequest, HttpResponse};
+use actix_web_lab::extract;
 use async_std::{fs, sync::Mutex, task};
 use futures::StreamExt;
 use std::{collections::HashMap, fs as fsSync, sync::Arc, time::Duration};
@@ -175,7 +176,7 @@ async fn file_chunks_merge(req: HttpRequest) -> Result<HttpResponse, Error> {
 }
 
 #[get("/fetch-file/{file_id}")]
-async fn download(web::Path(file_id): web::Path<i32>) -> Result<NamedFile, Error> {
+async fn download(extract::Path(file_id): extract::Path<i32>) -> Result<NamedFile, Error> {
     async fn handler(file_id: i32) -> Result<NamedFile, Box<dyn std::error::Error>> {
         let files = UPLOADED_FILES_INFO.files.lock().await;
 
