@@ -1,6 +1,9 @@
 use actix_cors::Cors;
 use actix_web::{App, HttpServer, get};
 
+mod actix_split_chunks_upload_handlers;
+mod actix_utils;
+
 mod transfer_serve;
 mod clipboard_serve;
 

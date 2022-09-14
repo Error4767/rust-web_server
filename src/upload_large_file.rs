@@ -1,7 +1,7 @@
 use actix_web::{error, post, web, Error, HttpRequest, HttpResponse};
 use parking_lot::RwLock;
 
-use actix_utils::get_header;
+use crate::actix_utils::get_header;
 
 use std::sync::Arc;
 
@@ -10,7 +10,7 @@ pub struct Verify {
 }
 
 // 大文件上传
-use actix_split_chunks_upload_handlers::{
+use crate::actix_split_chunks_upload_handlers::{
   // upload chunk handler
   split_chunks_upload_handler,
   // merge chunks handler

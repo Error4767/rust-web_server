@@ -270,28 +270,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "actix_split_chunks_upload_handlers"
-version = "0.1.0"
-dependencies = [
- "actix-web",
- "actix-web-lab",
- "actix_utils",
- "async-std",
- "futures",
- "lazy_static",
- "md5",
- "serde_json",
- "urlencoding",
-]
-
-[[package]]
-name = "actix_utils"
-version = "0.1.0"
-dependencies = [
- "actix-web",
-]
-
-[[package]]
 name = "adler"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1954,8 +1932,6 @@ dependencies = [
  "actix-files",
  "actix-web",
  "actix-web-lab",
- "actix_split_chunks_upload_handlers",
- "actix_utils",
  "async-std",
  "futures",
  "hotwatch",

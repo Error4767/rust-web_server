@@ -1,6 +1,9 @@
 use actix_cors::Cors;
 use actix_web::{App, HttpServer};
 
+mod actix_split_chunks_upload_handlers;
+mod actix_utils;
+
 mod upload_large_file;
 use upload_large_file::{actix_configure, update_tokens};
 

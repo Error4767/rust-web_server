@@ -8,7 +8,7 @@ use urlencoding::decode;
 
 use rand::Rng;
 
-use actix_utils::get_header;
+use crate::actix_utils::get_header;
 
 const SURVIVAL_TIME: u64 = 86400; // 文件存活时间
 
@@ -133,7 +133,7 @@ async fn upload(req: HttpRequest, payload: web::Payload) -> Result<String, Error
     }
 }
 
-use actix_split_chunks_upload_handlers::{
+use crate::actix_split_chunks_upload_handlers::{
     // merge chunk handler
     file_chunks_merge_handler,
     get_uploaded_chunks_hashes,
