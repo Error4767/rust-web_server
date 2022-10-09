@@ -84,7 +84,7 @@ async fn file_chunks_merge(
   };
 
   if verify_token_valid(String::from(token)) {
-    match file_chunks_merge_handler(req).await {
+    match file_chunks_merge_handler(req, None).await {
       Ok(_) => Ok(HttpResponse::Ok().body("true")),
       Err(_) => Err(error::ErrorBadRequest("failed to merge chunks")),
     }

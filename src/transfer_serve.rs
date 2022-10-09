@@ -43,16 +43,14 @@ lazy_static! {
     });
 }
 
-// 存储信息并且取得提取码，并且过时删除文件
-async fn save_and_fetch_extract_code(full_path: String) -> Result<String, Error> {
+// 生成提取码
+fn generate_fetch_code() -> i32 {
     let mut rng = rand::thread_rng();
-    let file_code = rng.gen_range(100000..1000000);
+    rng.gen_range(100000..1000000)
+}
 
-    // 文件名后加上提取码，避免重复
-    let new_full_path = format!("{}{}", &full_path, file_code);
-
-    fs::rename(&full_path, &new_full_path).await?;
-
+// 存储信息到哈希表并且过时删除文件
+async fn save_and_expiration_clear(full_path: String, file_code: i32) -> Result<(), Error> {
     // 拷贝引用
     let uploaded_files_info_ref = UPLOADED_FILES_INFO.clone();
     // 指定时间后删除文件
@@ -87,11 +85,11 @@ async fn save_and_fetch_extract_code(full_path: String) -> Result<String, Error>
     files.insert(
         file_code,
         FileInfo {
-            full_path: new_full_path,
+            full_path: full_path,
         },
     );
 
-    Ok(format!("{}", file_code))
+    Ok(())
 }
 
 #[post("/upload")]
@@ -117,15 +115,19 @@ async fn upload(req: HttpRequest, payload: web::Payload) -> Result<String, Error
             file_content.extend_from_slice(&chunk);
         }
 
-        let full_path = format!("{}{}", UPLOAD_CONFIG.base_path, filename); // 完整的文件存放路径
+        let fetch_code = generate_fetch_code();
+
+        let full_path = format!("{}{}{}", UPLOAD_CONFIG.base_path, filename, fetch_code); // 完整的文件存放路径
 
         // 存储接收的文件
         fs::write(&full_path, &file_content).await?;
 
-        // 存储信息并且获得提取码
-        let file_code = save_and_fetch_extract_code(full_path).await?;
-        println!("file code: {}", file_code);
-        Ok(file_code)
+        // 存储信息，并激活过期删除
+        save_and_expiration_clear(full_path, fetch_code).await?;
+
+        println!("file code: {}", fetch_code);
+
+        Ok(fetch_code.to_string())
     }
     match handler(req, payload).await {
         Ok(res) => Ok(res),
@@ -160,14 +162,24 @@ async fn upload_chunk(req: HttpRequest, payload: web::Payload) -> Result<String,
 #[post("/merge_chunks")]
 async fn file_chunks_merge(req: HttpRequest) -> Result<HttpResponse, Error> {
     async fn handler(req: HttpRequest) -> Result<HttpResponse, Box<dyn std::error::Error>> {
-        let full_path = file_chunks_merge_handler(req).await?;
+        let fetch_code = generate_fetch_code();
 
-        // 存储信息并且获得提取码
-        let file_code = save_and_fetch_extract_code(full_path).await?;
-        println!("file code: {}", file_code);
+        let full_path = file_chunks_merge_handler(
+            req,
+            // 转换路径，在后面加上提取码，防止重名覆盖
+            Some(Box::new(move |file_path: String| {
+                format!("{}{}", file_path, fetch_code)
+            })),
+        )
+        .await?;
+
+        // 存储信息，并激活过期删除
+        save_and_expiration_clear(full_path, fetch_code).await?;
+
+        println!("file code: {}", fetch_code);
 
         // 响应
-        Ok(HttpResponse::Ok().body(format!("{}", file_code)))
+        Ok(HttpResponse::Ok().body(format!("{}", fetch_code)))
     }
     match handler(req).await {
         Ok(res) => Ok(res),
