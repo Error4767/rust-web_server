@@ -175,7 +175,7 @@ pub async fn split_chunks_upload_handler(
 pub async fn file_chunks_merge_handler(
     req: HttpRequest,
     // 覆盖保存地址的函数
-    rewrite_save_path_fn: Option<Box<dyn Fn(String) -> String>>,
+    rewrite_save_path_fn: Option<Box<dyn Fn(&str, String) -> String>>,
 ) -> Result<String, Box<dyn std::error::Error>> {
     let headers = get_headers(
         &req,
@@ -194,12 +194,13 @@ pub async fn file_chunks_merge_handler(
 
     // 合并chunks
     println!("merge chunks");
-    let mut file_path = format!("{}{}", UPLOAD_CHUNKS_CONFIG.base_path, full_path);
-
-    // 如果有，处理一下地址
-    if let Some(rewrite_save_path_fn) = rewrite_save_path_fn {
-        file_path = rewrite_save_path_fn(file_path);
-    }
+    // 如果有重写保存路径的函数，就使用，否则，直接拼接
+    let file_path = match rewrite_save_path_fn {
+        Some(rewrite_save_path_fn)=> {
+            rewrite_save_path_fn(&UPLOAD_CHUNKS_CONFIG.base_path, String::from(full_path))
+        },
+        None=> format!("{}{}", UPLOAD_CHUNKS_CONFIG.base_path, full_path),
+    };
 
     // 创建文件
     File::create(&file_path).await?;
@@ -219,7 +220,7 @@ pub async fn file_chunks_merge_handler(
         let chunk = fs::read(&chunk_path).await?;
 
         file.write(&chunk).await?;
-        println!("chunk {} merged to file: {}", current_chunk_hash, full_path);
+        println!("chunk {} merged to file: {}", current_chunk_hash, file_path);
     }
 
     // 结束之后删除所有chunk
@@ -236,7 +237,7 @@ pub async fn file_chunks_merge_handler(
     files
         .remove(identify)
         .ok_or_else(|| String::from("remove hashmap element error"))?;
-    println!("deleted hashmap item: {}", full_path);
+    println!("deleted hashmap item: {}", file_path);
 
     Ok(String::from(file_path))
 }

@@ -1933,6 +1933,7 @@ dependencies = [
  "actix-web",
  "actix-web-lab",
  "async-std",
+ "base64",
  "futures",
  "hotwatch",
  "lazy_static",

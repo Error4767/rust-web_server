@@ -9,6 +9,49 @@ pub struct Verify {
   pub tokens: RwLock<Vec<String>>,
 }
 
+use serde_json::Value;
+use base64::decode;
+
+use std::str;
+
+// 从 token 中获取 userDirectory 的方法
+fn get_user_directory(token: &str)-> Result<String, String> {
+  // 尝试截取为三个部分，验证有效性
+  let splits: Vec<&str> = token.split(".").collect();
+  // 长度不为3， 不是有效 jwt
+  if splits.len() != 3 {
+    return Err("invalid token".to_string());
+  }
+  // 截取 jwt 中间主体部分，并 base64 解码
+  let body_raw = match decode(splits[1]) {
+    Ok(result)=> result,
+    Err(err)=> {
+      return Err(err.to_string());
+    },
+  };
+  // 转换为 str
+  let body_json = match str::from_utf8(&body_raw) {
+    Ok(v) => v,
+    Err(err) => {
+      return Err(err.to_string());
+    },
+  };
+  // 反序列化
+  let body: Value = match serde_json::from_str(body_json) {
+    Ok(v) => v,
+    Err(err) => {
+      return Err(err.to_string());
+    },
+  };
+  // 尝试获取 userDirectory
+  match &body["data"]["userDirectory"] {
+    Value::String(user_directory)=> Ok(String::from(user_directory)),
+    _=> {
+      return Err("userDirectory is invalid".to_string());
+    },
+  }
+}
+
 // 大文件上传
 use crate::actix_split_chunks_upload_handlers::{
   // upload chunk handler
@@ -84,7 +127,22 @@ async fn file_chunks_merge(
   };
 
   if verify_token_valid(String::from(token)) {
-    match file_chunks_merge_handler(req, None).await {
+
+    // 取得用户目录
+    let user_directory = match get_user_directory(token){
+      Ok(v)=> v,
+      Err(err) => {
+        return Err(error::ErrorBadRequest(err.to_string()));
+      }
+    };
+
+    match file_chunks_merge_handler(
+      req,
+      // 转换路径加上用户目录路径
+      Some(Box::new(move | base_path, full_path | {
+        format!("{}{}{}", base_path, user_directory, full_path)
+      })),
+    ).await {
       Ok(_) => Ok(HttpResponse::Ok().body("true")),
       Err(_) => Err(error::ErrorBadRequest("failed to merge chunks")),
     }

@@ -167,8 +167,8 @@ async fn file_chunks_merge(req: HttpRequest) -> Result<HttpResponse, Error> {
         let full_path = file_chunks_merge_handler(
             req,
             // 转换路径，在后面加上提取码，防止重名覆盖
-            Some(Box::new(move |file_path: String| {
-                format!("{}{}", file_path, fetch_code)
+            Some(Box::new(move | base_path, full_path | {
+                format!("{}{}{}", base_path, full_path, fetch_code)
             })),
         )
         .await?;
