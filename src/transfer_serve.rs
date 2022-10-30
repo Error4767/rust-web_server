@@ -10,7 +10,7 @@ use rand::Rng;
 
 use crate::actix_utils::get_header;
 
-const SURVIVAL_TIME: u64 = 86400; // 文件存活时间
+const SURVIVAL_TIME: u64 = 7 * 86400; // 文件存活时间
 
 const MAX_SIZE: usize = 536870912; // 512MB最大尺寸
 
@@ -44,9 +44,15 @@ lazy_static! {
 }
 
 // 生成提取码
-fn generate_fetch_code() -> i32 {
+async fn generate_fetch_code() -> i32 {
+    let files = UPLOADED_FILES_INFO.files.lock().await;
     let mut rng = rand::thread_rng();
-    rng.gen_range(100000..1000000)
+    let mut fetch_code = rng.gen_range(100000..1000000);
+    // 如果已有，重新生成，直到没有
+    while files.contains_key(&fetch_code) {
+        fetch_code = rng.gen_range(100000..1000000);
+    }
+    fetch_code
 }
 
 // 存储信息到哈希表并且过时删除文件
@@ -115,7 +121,7 @@ async fn upload(req: HttpRequest, payload: web::Payload) -> Result<String, Error
             file_content.extend_from_slice(&chunk);
         }
 
-        let fetch_code = generate_fetch_code();
+        let fetch_code = generate_fetch_code().await;
 
         let full_path = format!("{}{}{}", UPLOAD_CONFIG.base_path, filename, fetch_code); // 完整的文件存放路径
 
@@ -162,7 +168,7 @@ async fn upload_chunk(req: HttpRequest, payload: web::Payload) -> Result<String,
 #[post("/merge_chunks")]
 async fn file_chunks_merge(req: HttpRequest) -> Result<HttpResponse, Error> {
     async fn handler(req: HttpRequest) -> Result<HttpResponse, Box<dyn std::error::Error>> {
-        let fetch_code = generate_fetch_code();
+        let fetch_code = generate_fetch_code().await;
 
         let full_path = file_chunks_merge_handler(
             req,
