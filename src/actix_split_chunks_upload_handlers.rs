@@ -104,7 +104,7 @@ pub async fn split_chunks_upload_handler(
     let computed_hash = format!("{:?}", computeHash(&chunk_content));
 
     println!(
-        "computed_hash: {:#?}\r\nchunkHash: {}",
+        "computed_hash: {:?}\r\nchunkHash: {}",
         &computed_hash, chunk_hash
     );
 
@@ -113,7 +113,7 @@ pub async fn split_chunks_upload_handler(
         return Err("chunk hash not match".into());
     }
 
-    let chunk_full_path = format!("{}{}.chunk", UPLOAD_CHUNKS_CONFIG.chunks_path, chunk_hash); // 完整的文件存放路径
+    let chunk_full_path = format!("{}{}{:?}.chunk", UPLOAD_CHUNKS_CONFIG.chunks_path, chunk_hash, computeHash(identify)); // 完整的文件存放路径
 
     // 存储chunk到本地
     fs::write(&chunk_full_path, &chunk_content).await?;
@@ -147,12 +147,12 @@ pub async fn split_chunks_upload_handler(
                 if let Some(chunks_hash) = files.get(&identify_clone) {
                     for current_chunk_hash in chunks_hash.iter() {
                         let chunk_path = format!(
-                            "{}{}.chunk",
-                            UPLOAD_CHUNKS_CONFIG.chunks_path, &current_chunk_hash
+                            "{}{}{:?}.chunk",
+                            UPLOAD_CHUNKS_CONFIG.chunks_path, &current_chunk_hash, computeHash(&identify_clone)
                         );
 
                         if let Ok(_) = fs::remove_file(&chunk_path).await {
-                            println!("deleted chunk: {}.chunk", current_chunk_hash);
+                            println!("deleted chunk: {}", current_chunk_hash);
                         }
                     }
                 }
@@ -208,11 +208,12 @@ pub async fn file_chunks_merge_handler(
     let chunks_hash = files
         .get(identify)
         .ok_or_else(|| String::from("get FileInfo error"))?;
+    let identify_hash = computeHash(identify);
     // 遍历拿到的hash并读取对应chunk写入目标文件
     for current_chunk_hash in chunks_hash.iter() {
         let chunk_path = format!(
-            "{}{}.chunk",
-            UPLOAD_CHUNKS_CONFIG.chunks_path, &current_chunk_hash
+            "{}{}{:?}.chunk",
+            UPLOAD_CHUNKS_CONFIG.chunks_path, &current_chunk_hash, identify_hash,
         );
         let chunk = fs::read(&chunk_path).await?;
 
@@ -223,8 +224,8 @@ pub async fn file_chunks_merge_handler(
     // 结束之后删除所有chunk
     for current_chunk_hash in chunks_hash.iter() {
         let chunk_path = format!(
-            "{}{}.chunk",
-            UPLOAD_CHUNKS_CONFIG.chunks_path, &current_chunk_hash
+            "{}{}{:?}.chunk",
+            UPLOAD_CHUNKS_CONFIG.chunks_path, &current_chunk_hash, identify_hash
         );
         fs::remove_file(&chunk_path).await?;
         println!("deleted chunk: {}.chunk", current_chunk_hash);
