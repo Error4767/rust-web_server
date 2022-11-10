@@ -59,13 +59,10 @@ pub async fn get_uploaded_chunks_hashes(
     let files = UPLOADED_CHUNKS_DATAS.files.lock().await;
 
     // 如果为空，不存在，没法获取或者错误，就返回一个空数组 json
-    let chunks_hash_json_array = match files.get(identify) {
-        Some(chunks_info) => match serde_json::to_string(&chunks_info) {
-            Ok(chunks_hash_json_array) => chunks_hash_json_array,
-            Err(_) => String::from("[]"),
-        },
-        None => String::from("[]"),
-    };
+    let chunks_hash_json_array: String = files.get(identify).map_or_else(
+        || String::from("[]"),
+        |chunks_info| serde_json::to_string(&chunks_info).unwrap_or_else(|_| String::from("[]"))
+    );
 
     Ok(chunks_hash_json_array)
 }

@@ -39,10 +39,7 @@ async fn cloud_clipboard_get(
   extract::Path(uid): extract::Path<String>
 ) -> Result<String, Error> {
   let file_path = format!("./clipboard/{}.txt", uid);
-  match fs::read_to_string(file_path).await {
-    Ok(result_content)=> Ok(result_content),
-    Err(_)=> Err(error::ErrorBadRequest("this clipboard file is not found"))
-  }
+  fs::read_to_string(file_path).await.or_else(|_| Err(error::ErrorBadRequest("this clipboard file is not found")))
 }
 
 pub fn actix_configure(config: &mut web::ServiceConfig) {

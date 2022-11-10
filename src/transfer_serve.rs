@@ -66,10 +66,7 @@ async fn save_and_expiration_clear(full_path: String, file_code: i32) -> Result<
             // 提取文件信息
             let full_path = match files.get(&file_code) {
                 Some(file_info) => String::from(&file_info.full_path),
-                None => {
-                    println!("delete error");
-                    return;
-                }
+                None => return println!("delete error"),
             };
 
             match files.remove(&file_code) {
@@ -135,10 +132,7 @@ async fn upload(req: HttpRequest, payload: web::Payload) -> Result<String, Error
 
         Ok(fetch_code.to_string())
     }
-    match handler(req, payload).await {
-        Ok(res) => Ok(res),
-        Err(err) => Err(error::ErrorBadRequest(err)),
-    }
+    handler(req, payload).await.or_else(|err| Err(error::ErrorBadRequest(err)))
 }
 
 use crate::actix_split_chunks_upload_handlers::{
@@ -151,18 +145,12 @@ use crate::actix_split_chunks_upload_handlers::{
 
 #[post("/fetch_uploaded_chunks_hashes")]
 async fn fetch_uploaded_chunks_hashes(req: HttpRequest) -> Result<String, Error> {
-    match get_uploaded_chunks_hashes(req).await {
-        Ok(res) => Ok(res),
-        Err(err) => Err(error::ErrorBadRequest(err)),
-    }
+    get_uploaded_chunks_hashes(req).await.or_else(|err| Err(error::ErrorBadRequest(err)))
 }
 
 #[post("/upload_chunk")]
 async fn upload_chunk(req: HttpRequest, payload: web::Payload) -> Result<String, Error> {
-    match split_chunks_upload_handler(req, payload).await {
-        Ok(res) => Ok(res),
-        Err(err) => Err(error::ErrorBadRequest(err)),
-    }
+    split_chunks_upload_handler(req, payload).await.or_else(|err| Err(error::ErrorBadRequest(err)))
 }
 
 #[post("/merge_chunks")]
@@ -187,10 +175,7 @@ async fn file_chunks_merge(req: HttpRequest) -> Result<HttpResponse, Error> {
         // 响应
         Ok(HttpResponse::Ok().body(format!("{}", fetch_code)))
     }
-    match handler(req).await {
-        Ok(res) => Ok(res),
-        Err(err) => Err(error::ErrorBadRequest(err)),
-    }
+    handler(req).await.or_else(|err| Err(error::ErrorBadRequest(err)))
 }
 
 #[get("/fetch-file/{file_id}")]
@@ -217,10 +202,7 @@ async fn download(extract::Path(file_id): extract::Path<i32>) -> Result<NamedFil
         // 返回对应文件
         Ok(NamedFile::from_file(file, filename)?)
     }
-    match handler(file_id).await {
-        Ok(res) => Ok(res),
-        Err(err) => Err(error::ErrorBadRequest(err)),
-    }
+    handler(file_id).await.or_else(|err| Err(error::ErrorBadRequest(err)))
 }
 
 pub fn actix_configure(config: &mut web::ServiceConfig) {

@@ -15,10 +15,8 @@ use std::fs as fsSync;
 async fn main() -> std::io::Result<()> {
   
   // 观察文件变化，更新 tokens
-  let mut hot_watch = match Hotwatch::new() {
-    Ok(hot_watch) => hot_watch,
-    Err(_) => panic!("failed to launch file watcher"),
-  };
+  let mut hot_watch = Hotwatch::new().unwrap();
+  
   let watch_path = "./validTokens.json";
   if let Err(err) = hot_watch.watch(watch_path, move |event: Event| {
     if let Event::Write(watch_path) = event {
@@ -26,10 +24,7 @@ async fn main() -> std::io::Result<()> {
         Ok(content)=> {
           let new_tokens:Vec<String> = match serde_json::from_str(&content) {
             Ok(content)=> content,
-            Err(_)=> {
-              println!("read watched file failed");
-              return;
-            } 
+            Err(_)=> return println!("read watched file failed"),
           };
           // 更新 tokens
           update_tokens(new_tokens);

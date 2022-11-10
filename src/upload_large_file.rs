@@ -25,30 +25,22 @@ fn get_user_directory(token: &str)-> Result<String, String> {
   // 截取 jwt 中间主体部分，并 base64 解码
   let body_raw = match decode(splits[1]) {
     Ok(result)=> result,
-    Err(err)=> {
-      return Err(err.to_string());
-    },
+    Err(err)=> return Err(err.to_string()),
   };
   // 转换为 str
   let body_json = match str::from_utf8(&body_raw) {
     Ok(v) => v,
-    Err(err) => {
-      return Err(err.to_string());
-    },
+    Err(err) => return Err(err.to_string()),
   };
   // 反序列化
   let body: Value = match serde_json::from_str(body_json) {
     Ok(v) => v,
-    Err(err) => {
-      return Err(err.to_string());
-    },
+    Err(err) => return Err(err.to_string()),
   };
   // 尝试获取 userDirectory
   match &body["data"]["userDirectory"] {
     Value::String(user_directory)=> Ok(String::from(user_directory)),
-    _=> {
-      return Err("userDirectory is invalid".to_string());
-    },
+    _=> return Err("userDirectory is invalid".to_string()),
   }
 }
 
@@ -90,10 +82,7 @@ async fn upload_chunks(
     }
   }
 
-  match handler(req, payload).await {
-    Ok(res)=> Ok(res),
-    Err(err)=> Err(error::ErrorBadRequest(err))
-  }
+  handler(req, payload).await.or_else(|err| Err(error::ErrorBadRequest(err)))
 }
 
 #[post("/fetch_uploaded_chunks_hashes")]
@@ -109,10 +98,7 @@ async fn fetch_uploaded_chunks_hashes(
     }
   }
 
-  match handler(req).await {
-    Ok(res)=> Ok(res),
-    Err(err)=> Err(error::ErrorBadRequest(err))
-  }
+  handler(req).await.or_else(|err| Err(error::ErrorBadRequest(err)))
 }
 
 #[post("/merge_chunks")]
@@ -121,9 +107,7 @@ async fn file_chunks_merge(
 ) -> Result<HttpResponse, Error> {
   let token = match get_header(&req, "token") {
     Some(token) => token,
-    None => {
-      return Err(error::ErrorBadRequest("request header token is not found"));
-    }
+    None => return Err(error::ErrorBadRequest("request header token is not found")),
   };
 
   if verify_token_valid(String::from(token)) {
@@ -131,21 +115,16 @@ async fn file_chunks_merge(
     // 取得用户目录
     let user_directory = match get_user_directory(token){
       Ok(v)=> v,
-      Err(err) => {
-        return Err(error::ErrorBadRequest(err.to_string()));
-      }
+      Err(err) => return Err(error::ErrorBadRequest(err.to_string())),
     };
 
-    match file_chunks_merge_handler(
+    file_chunks_merge_handler(
       req,
       // 转换路径加上用户目录路径
       Some(Box::new(move | base_path, full_path | {
         format!("{}{}{}", base_path, user_directory, full_path)
       })),
-    ).await {
-      Ok(_) => Ok(HttpResponse::Ok().body("true")),
-      Err(_) => Err(error::ErrorBadRequest("failed to merge chunks")),
-    }
+    ).await.map_or_else(|_| Err(error::ErrorBadRequest("failed to merge chunks")), |_| Ok(HttpResponse::Ok().body("true")))
   } else {
     Err(error::ErrorBadRequest("token is invalid"))
   }
