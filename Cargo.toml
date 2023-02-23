@@ -9,8 +9,9 @@ version = "0.1.0"
 [[bin]]
 name = "web_server"
 path = "src/transfer_serve_main.rs"
-# name = "split_chunks_upload"
-# path = "src/upload_large_file_main.rs"
+[[bin]]
+name = "split_chunks_upload"
+path = "src/upload_large_file_main.rs"
 
 [dependencies]
 actix-cors = "0.6.2"
