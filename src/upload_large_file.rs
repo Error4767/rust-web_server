@@ -10,7 +10,7 @@ pub struct Verify {
 }
 
 use serde_json::Value;
-use base64::{ Engine, engine::general_purpose };
+use base64::{ Engine as _, engine::general_purpose };
 
 use std::str;
 
@@ -23,7 +23,7 @@ fn get_user_directory(token: &str)-> Result<String, String> {
     return Err("invalid token".to_string());
   }
   // 截取 jwt 中间主体部分，并 base64 解码
-  let body_raw = match general_purpose::STANDARD.decode(splits[1]) {
+  let body_raw = match general_purpose::STANDARD_NO_PAD.decode(splits[1]) {
     Ok(result)=> result,
     Err(err)=> return Err(err.to_string()),
   };
