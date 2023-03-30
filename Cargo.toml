@@ -14,18 +14,18 @@ name = "split_chunks_upload"
 path = "src/upload_large_file_main.rs"
 
 [dependencies]
-actix-cors = "0.6.2"
+actix-cors = "0.6.4"
 actix-files = "0.6.2"
-actix-web = { version = "4.1.0" }
-actix-web-lab = "0.17.0"
+actix-web = { version = "4.3.1" }
+actix-web-lab = "0.19.1"
 async-std = { version = "1.12.0", features = ["attributes"] }
-futures = "0.3.24"
+futures = "0.3.27"
 rand = "0.8.5"
-serde = "1.0.144"
-serde_json = "1.0.85"
+serde = "1.0.158"
+serde_json = "1.0.94"
 parking_lot = "0.12.1"
 md5 = "0.7.0"
-urlencoding = "2.1.0"
+urlencoding = "2.1.2"
 hotwatch = "0.4.6"
 lazy_static="1.4.0"
-base64 = "0.13.0"
+base64 = "0.21.0"
