@@ -1971,6 +1971,7 @@ dependencies = [
  "actix-web-lab",
  "async-std",
  "base64",
+ "bytes",
  "futures",
  "hotwatch",
  "lazy_static",

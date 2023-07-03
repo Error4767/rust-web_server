@@ -1,6 +1,8 @@
 use actix_cors::Cors;
 use actix_web::{App, HttpServer};
 
+mod split_chunks_upload_operations_raw;
+
 mod actix_split_chunks_upload_handlers;
 mod actix_utils;
 
