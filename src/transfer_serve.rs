@@ -1,9 +1,9 @@
 use actix_files::NamedFile;
 use actix_web::{error, get, post, web, Error, HttpRequest, HttpResponse};
 use actix_web_lab::extract;
-use async_std::{fs, sync::Mutex, task};
+use tokio::{fs, sync::Mutex, task, time::{ sleep, Duration }};
 use futures::StreamExt;
-use std::{collections::HashMap, fs as fsSync, sync::Arc, time::Duration};
+use std::{collections::HashMap, fs as fsSync, sync::Arc};
 use urlencoding::decode;
 
 use rand::Rng;
@@ -79,7 +79,7 @@ async fn save_and_expiration_clear(full_path: String, file_code: i32) -> Result<
                 println!("Removed Item in HashMap, key: {}", &file_code);
             }
         };
-        task::sleep(Duration::from_secs(SURVIVAL_TIME)).await;
+        sleep(Duration::from_secs(SURVIVAL_TIME)).await;
         action.await;
     });
 

@@ -1,11 +1,12 @@
-use async_std::{
+use tokio::{
     fs::{self, File},
     sync::Mutex,
+    time::{ sleep, Duration },
     task,
 };
-use futures::AsyncWriteExt;
+use tokio::io::AsyncWriteExt;
 use std::sync::Arc;
-use std::{collections::HashMap, path::Path, time::Duration};
+use std::{collections::HashMap, path::Path};
 
 use urlencoding::decode;
 
@@ -119,7 +120,7 @@ pub async fn split_chunks_upload_raw(
             let identify_clone = String::from(identify);
 
             task::spawn(async move {
-                task::sleep(Duration::from_secs(CHUNK_SURVIVAL_TIME)).await;
+                sleep(Duration::from_secs(CHUNK_SURVIVAL_TIME)).await;
 
                 // 结束之后删除所有chunk, 并删除对应哈希表中项目1
                 let mut files = uploaded_datas_ref.files.lock().await;
