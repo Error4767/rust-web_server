@@ -7,7 +7,7 @@ mod actix_split_chunks_upload_handlers;
 mod actix_utils;
 
 mod transfer_serve;
-mod clipboard_serve;
+mod cloud_text_serve;
 
 #[get("/")]
 async fn g() -> &'static str {
@@ -27,7 +27,7 @@ async fn main() -> std::io::Result<()> {
           .max_age(3600),
       )
       .configure(transfer_serve::actix_configure)
-      .configure(clipboard_serve::actix_configure)
+      .configure(cloud_text_serve::actix_configure)
       .service(g)
   })
   .bind("0.0.0.0:16383")?
