@@ -159,12 +159,6 @@ pub async fn file_chunks_merge_raw(
 ) -> Result<String, Box<dyn std::error::Error>> {
     let (identify, full_path) = (headers[0], decode(headers[1])?);
 
-    // 创建目录
-    if let Some(index) = full_path.rfind("/") {
-        fs::create_dir_all(Path::new(&UPLOAD_CHUNKS_CONFIG.base_path).join(&full_path[0..index]))
-            .await?;
-    };
-
     let mut files = UPLOADED_CHUNKS_DATAS.files.lock().await;
 
     // 合并chunks
@@ -175,6 +169,12 @@ pub async fn file_chunks_merge_raw(
             rewrite_save_path_fn(&UPLOAD_CHUNKS_CONFIG.base_path, String::from(full_path))
         }
         None => format!("{}{}", UPLOAD_CHUNKS_CONFIG.base_path, full_path),
+    };
+
+    // 创建目录
+    if let Some(index) = file_path.rfind("/") {
+        fs::create_dir_all(&file_path[0..index])
+            .await?;
     };
 
     // 创建文件
